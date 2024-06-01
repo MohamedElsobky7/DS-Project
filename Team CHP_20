@@ -1,0 +1,313 @@
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <list>
+#include <map>
+#include <algorithm>
+#include <vector>
+
+using namespace std;
+
+void displayMenu();
+void addParagraph(list<string>& paragraph);
+void loadParagraphFromFile(list<string>& paragraph);
+void displayParagraph(list<string>& paragraph);
+void deleteSentence(list<string>& paragraph);
+void displayWordFrequencies(const list<string>& paragraph);
+void searchForWord(const list<string>& paragraph);
+void displayWordRank(const list<string>& paragraph);
+void sortWordsByFrequency(const list<string>& paragraph);
+void displayCurrentParagraph(const list<string>& paragraph); // Added function
+void updateParagraph(list<string>& paragraph); // Fixed function
+
+int main() {
+
+    list<string> paragraph;
+
+    while (true) {
+        displayMenu();
+        char choice;
+        cin >> choice;
+        cin.ignore();
+
+        switch (choice) {
+        case '1':
+            addParagraph(paragraph);
+            break;
+        case '2':
+            loadParagraphFromFile(paragraph);
+            break;
+        case '3':
+            updateParagraph(paragraph); // Fixed option
+            break;
+        case '4':
+            deleteSentence(paragraph);
+            break;
+        case '5':
+            displayWordFrequencies(paragraph);
+            break;
+        case '6':
+            searchForWord(paragraph);
+            break;
+        case '7':
+            displayWordRank(paragraph);
+            break;
+        case '8':
+            sortWordsByFrequency(paragraph);
+            break;
+        case 'D': // Added case
+        case 'd':
+            displayCurrentParagraph(paragraph);
+            break;
+        case '0':
+            cout << "Exiting" << endl;
+            return 0;
+        default:
+            cout << "Invalid choice. Please try again." << endl;
+        }
+    }
+
+    return 0;
+}
+
+void displayMenu() {
+    cout << "1. Write an English paragraph\n";
+    cout << "2. Upload a text file that contains the paragraph\n";
+    cout << "3. Update the displaying paragraph\n";
+    cout << "4. Delete some sentences for the paragraph or delete the total sentences\n";
+    cout << "5. Display frequencies for each word of the paragraph\n";
+    cout << "6. Search for a word and display its frequency\n";
+    cout << "7. Display the ranking (order) of a word\n";
+    cout << "8. Sort words by frequency\n";
+    cout << "D. Display current paragraph\n"; // Added option
+    cout << "0. Exit program\n\n";
+    cout << "Enter choice: ";
+}
+
+void addParagraph(list<string>& paragraph) {
+    paragraph.clear();
+    cout << "Enter your paragraph: \n";
+    string line;
+    while (getline(cin, line) && !line.empty()) {
+        paragraph.push_back(line);
+    }
+}
+
+void loadParagraphFromFile(list<string>& paragraph) {
+    paragraph.clear();
+    cout << "Enter filename: ";
+    string filename;
+    getline(cin, filename);
+
+    ifstream file(filename);
+    if (!file) {
+        cout << "File could not be opened." << endl;
+        return;
+    }
+
+    string line;
+    while (getline(file, line)) {
+        if (!line.empty()) {
+            paragraph.push_back(line);
+        }
+    }
+    file.close();
+    cout << "Paragraph loaded from file." << endl;
+}
+
+void displayParagraph(list<string>& paragraph) {
+
+    cout << "Current paragraph:\n";
+    for (const string& sentence : paragraph) {
+        cout << sentence << endl;
+    }
+}
+
+void deleteSentence(list<string>& paragraph) {
+    cout << "Choose what to delete:\n";
+    cout << "1. Delete words\n";
+    cout << "2. Delete sentences\n";
+    cout << "3. Delete full lines\n";
+    cout << "Enter choice: ";
+
+    char choice;
+    cin >> choice;
+    cin.ignore();
+
+    switch (choice) {
+    case '1': {
+        cout << "Enter the word to delete: ";
+        string wordToDelete;
+        cin >> wordToDelete;
+
+        for (auto& sentence : paragraph) {
+            stringstream ss(sentence);
+            string word;
+            string newSentence = "";
+            while (ss >> word) {
+                if (word != wordToDelete) {
+                    newSentence += word + " ";
+                }
+            }
+            sentence = newSentence;
+        }
+
+        break;
+    }
+    case '2': {
+        cout << "Enter the sentence to delete: ";
+        string sentenceToDelete;
+        cin.ignore(); // Clear the buffer before getline
+        getline(cin, sentenceToDelete);
+
+        paragraph.remove(sentenceToDelete);
+        break;
+    }
+    case '3': {
+        cout << "Enter the line number to delete (0 to delete all): ";
+        int num, current = 1;
+        cin >> num;
+
+        if (num == 0) {
+            paragraph.clear();
+            cout << "All lines deleted." << endl;
+        }
+        else if (num < 1 || num > paragraph.size()) {
+            cout << "Invalid line number." << endl;
+        }
+        else {
+            auto it = paragraph.begin();
+            advance(it, num - 1);
+            paragraph.erase(it);
+            cout << "Line " << num << " deleted." << endl;
+        }
+        break;
+    }
+    default:
+        cout << "Invalid choice. Please try again." << endl;
+        break;
+    }
+}
+
+string toLower(const string& str) {
+    string lowerStr;
+    transform(str.begin(), str.end(), back_inserter(lowerStr), ::tolower);
+    return lowerStr;
+}
+
+void displayWordFrequencies(const list<string>& paragraph) {
+    map<string, int> freq;
+    for (const auto& line : paragraph) {
+        istringstream iss(line);
+        string word;
+        while (iss >> word) {
+            word.erase(remove_if(word.begin(), word.end(), ::ispunct), word.end());
+            freq[toLower(word)]++;
+        }
+    }
+
+    cout << "Word frequencies:\n";
+    for (const auto& pair : freq) {
+        cout << pair.first << ": " << pair.second << endl;
+    }
+}
+
+void searchForWord(const list<string>& paragraph) {
+    cout << "Enter a word to search: ";
+    string searchWord;
+    cin >> searchWord;
+    searchWord = toLower(searchWord);
+
+    map<string, int> freq;
+    for (const auto& line : paragraph) {
+        istringstream iss(line);
+        string word;
+        while (iss >> word) {
+            word.erase(remove_if(word.begin(), word.end(), ::ispunct), word.end());
+            freq[toLower(word)]++;
+        }
+    }
+
+    auto it = freq.find(searchWord);
+    if (it != freq.end()) {
+        cout << "Frequency of '" << searchWord << "': " << it->second << endl;
+    }
+    else {
+        cout << "Word not found." << endl;
+    }
+}
+
+void displayWordRank(const list<string>& paragraph) {
+    cout << "Enter a word to find its rank: ";
+    string rankWord;
+    cin >> rankWord;
+    rankWord = toLower(rankWord);
+
+    map<string, int> freq;
+    for (const auto& line : paragraph) {
+        istringstream iss(line);
+        string word;
+        while (iss >> word) {
+            word.erase(remove_if(word.begin(), word.end(), ::ispunct), word.end());
+            freq[toLower(word)]++;
+        }
+    }
+
+    vector<pair<int, string>> sortedWords;
+    for (const auto& p : freq) {
+        sortedWords.push_back(make_pair(p.second, p.first));
+    }
+    sort(sortedWords.rbegin(), sortedWords.rend());
+
+
+    int rank = 1;
+    for (const auto& p : sortedWords) {
+        if (p.second == rankWord) {
+            cout << "Rank of '" << rankWord << "' is: " << rank << endl;
+            return;
+        }
+        rank++;
+    }
+    cout << "Word not found." << endl;
+}
+
+void sortWordsByFrequency(const list<string>& paragraph) {
+    map<string, int> freq;
+    for (const auto& line : paragraph) {
+        istringstream iss(line);
+        string word;
+        while (iss >> word) {
+            word.erase(remove_if(word.begin(), word.end(), ::ispunct), word.end());
+            freq[toLower(word)]++;
+        }
+    }
+
+
+    vector<pair<int, string>> sortedWords;
+    for (const auto& p : freq) {
+        sortedWords.push_back(make_pair(p.second, p.first));
+    }
+    sort(sortedWords.begin(), sortedWords.end(), greater<pair<int, string>>());
+
+    cout << "Words sorted by frequency (descending):\n";
+    for (const auto& p : sortedWords) {
+        cout << p.second << ": " << p.first << endl;
+    }
+}
+
+void displayCurrentParagraph(const list<string>& paragraph) {
+    cout << "Current paragraph:\n";
+    for (const string& sentence : paragraph) {
+        cout << sentence << endl;
+    }
+}
+
+void updateParagraph(list<string>& paragraph) {
+    cout << "Enter the new paragraph: \n";
+    string line;
+    paragraph.clear();
+    while (getline(cin, line) && !line.empty()) {
+        paragraph.push_back(line);
+    }
+    cout << "Paragraph updated." << endl;
+}
